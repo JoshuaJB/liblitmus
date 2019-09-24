@@ -86,3 +86,38 @@ int null_call(cycles_t *timestamp)
 {
 	return syscall(__NR_null_call, timestamp);
 }
+
+int reservation_create(int rtype, void *config)
+{
+	return syscall(__NR_reservation_create, rtype, config);
+}
+
+int reservation_destroy(unsigned int reservation_id, int cpu)
+{
+	return syscall(__NR_reservation_destroy, reservation_id, cpu);
+}
+
+int set_mc2_task_param(pid_t pid, struct mc2_task *param)
+{
+	return syscall(__NR_set_mc2_task_param, pid, param);
+}
+
+int set_page_color(int cpu)
+{
+	return syscall(__NR_set_page_color, cpu);
+}
+
+int recolor_mem(void* vaddr, int num_pages, int cpu)
+{
+	return syscall(__NR_recolor_mem, vaddr, num_pages, cpu);
+}
+
+int run_bench(int type, int wss, cacheline_t *src, cacheline_t *dst, lt_t *ts)
+{
+	return syscall(__NR_run_test, type, wss, src, dst, ts);
+}
+
+int lock_buffer(void* vaddr, size_t size, unsigned int lock_way, unsigned int unlock_way)
+{
+	return syscall(__NR_lock_buffer, vaddr, size, lock_way, unlock_way);
+}

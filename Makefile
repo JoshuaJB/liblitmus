@@ -168,7 +168,8 @@ litmus-headers = \
 	include/litmus/rt_param.h \
 	include/litmus/fpmath.h \
 	include/litmus/unistd_32.h \
-	include/litmus/unistd_64.h
+	include/litmus/unistd_64.h \
+	include/litmus/mc2_common.h
 
 unistd-headers = \
   $(foreach file,${unistd-${ARCH}},arch/${include-${ARCH}}/include/$(file))

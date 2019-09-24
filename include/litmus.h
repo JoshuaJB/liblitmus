@@ -40,11 +40,21 @@ extern "C" {
 
 #include "migration.h"
 
+#include "litmus/mc2_common.h"
+
 /**
  * @private
- * The numeric ID of the LITMUS^RT scheduling class.
+ * Number of semaphore protocol object types
  */
 #define SCHED_LITMUS 7
+
+#define CACHELINE_SIZE 32
+#define INTS_IN_CACHELINE (CACHELINE_SIZE/sizeof(int))
+#define CACHELINES_IN_1KB (1024 / sizeof(cacheline_t))
+typedef struct cacheline
+{
+        int line[INTS_IN_CACHELINE];
+} __attribute__((aligned(CACHELINE_SIZE))) cacheline_t;
 
 /**
  * Initialise a real-time task param struct
@@ -146,6 +156,12 @@ int sporadic_clustered(lt_t e_ns, lt_t p_ns, int cluster);
 /** Convert microseconds to nanoseconds
   * @param us Time units in microseconds */
 #define us2ns(us) ((us)*1000LL)
+#define ns2s(ns)  ((ns)/1000000000LL)
+#define ns2ms(ns) ((ns)/1000000LL)
+#define ns2us(ns) ((ns)/1000LL)
+#define us2ms(us) ((us)/1000LL)
+#define us2s(us)  ((us)/1000000LL)
+#define ms2s(ms)  ((ms)/1000LL)
 
 /**
  * Locking protocols for allocated shared objects
@@ -286,6 +302,12 @@ void exit_np(void);
  */
 int  requested_to_preempt(void);
 
+/* pgm support */
+void enter_pgm_wait(void);
+void exit_pgm_wait(void);
+void enter_pgm_send(void);
+void exit_pgm_send(void);
+
 /***** Task System support *****/
 /**
  * Wait until task master releases all real-time tasks
@@ -415,6 +437,48 @@ int null_call(cycles_t *timestamp);
  * but it is very general and can be used for different purposes
  */
 struct control_page* get_ctrl_page(void);
+
+int reservation_create(int rtype, void *config);
+
+int reservation_destroy(unsigned int reservation_id, int cpu);
+
+/**
+ * Set task criticality
+ * @param pid ID of process to be modified
+ * @param param Criticality and unique identifier for task
+ * @return 0 on success, standard errno otherwise
+ *
+ * The purpose of res_id in the mc2_task struct is unknown, current hypothesis
+ * is that it's used as a unique page or reservation identifier. PID recomended
+ */
+int set_mc2_task_param(pid_t pid, struct mc2_task* param);
+
+/**
+ * Migrate pages into partition reserved for the caller's criticality:
+ * @param cpu The current CPU on which the caller is running
+ * @return Total number of pages that could not be moved
+ *
+ * It is highly bizzare that this API requires the task to tell the kernel what
+ * CPU it is running on, but this will be fixed in a future release. TODO
+ * Also not that this call has undefined, and potentially harmful behavior if
+ * called before the mc2_task structure has been setup.
+ */
+int set_page_color(int cpu);
+
+/**
+ * Migrate specific pages into partition reserved for the caller's criticality:
+ * @param vaddr Starting address of the pages
+ * @param n_pages How many pages to migrate
+ * @param cpu The current CPU on which the caller is running
+ * @return Total number of pages that could not be moved
+ *
+ * This is a more refined version of set_page_color().
+ */
+int recolor_mem(void* vaddr, int n_pages, int cpu);
+
+int run_bench(int type, int size, cacheline_t *src, cacheline_t *dst, lt_t __user *ts);
+
+int lock_buffer(void* vaddr, size_t size, unsigned int lock_way, unsigned int unlock_way);
 
 #ifdef __cplusplus
 }
