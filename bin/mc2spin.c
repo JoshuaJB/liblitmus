@@ -143,11 +143,11 @@ static cacheline_t* random_start(int wss)
 {
 	return arena + randrange(0, ((wss * 1024)/sizeof(cacheline_t)));
 }
-
+/*
 static int sequential_walk(cacheline_t *_mem, int wss, int write_cycle)
 {
 	int sum = 0, i;
-	int* mem = (int*)_mem; /* treat as raw buffer of ints */
+	int* mem = (int*)_mem; // treat as raw buffer of ints
 	int num_ints = wss * INTS_IN_1KB;
 
 	if (write_cycle > 0) {
@@ -158,7 +158,7 @@ static int sequential_walk(cacheline_t *_mem, int wss, int write_cycle)
 				sum += mem[i];
 		}
 	} else {
-		/* sequential access, pure read */
+		// sequential access, pure read
 		for (i = 0; i < num_ints; i++)
 			sum += mem[i];
 	}
@@ -173,15 +173,15 @@ static cacheline_t* sequential_start(int wss)
 
 	cacheline_t *mem;
 
-	/* Don't allow re-use between allocations.
+	 * Don't allow re-use between allocations.
 	 * At most half of the arena may be used
 	 * at any one time.
-	 */
+	 *
 	if (num_cachelines * 2 > ((wss * 1024)/sizeof(cacheline_t)))
 		;//bail_out("static memory arena too small");
 
 	if (pos + num_cachelines > ((wss * 1024)/sizeof(cacheline_t))) {
-		/* wrap to beginning */
+		// wrap to beginning
 		mem = arena;
 		pos = num_cachelines;
 	} else {
@@ -191,7 +191,7 @@ static cacheline_t* sequential_start(int wss)
 
 	return mem;
 }
-
+*/
 static volatile int dont_optimize_me = 0;
 
 static void usage(char *error) {
@@ -199,7 +199,6 @@ static void usage(char *error) {
 	fprintf(stderr,
 		"Usage:\n"
 		"	rt_spin [COMMON-OPTS] WCET PERIOD DURATION\n"
-		"	rt_spin -l\n"
 		"\n"
 		"COMMON-OPTS = [-w] [-r] [-i] [-u]\n"
 		"              [-p PARTITION/CLUSTER] [-m CRITICALITY LEVEL]\n"
@@ -271,7 +270,7 @@ int main(int argc, char** argv)
 	int cluster = 0;
 	int opt;
 	int wait = 0;
-	double duration = 0, start = 0, stop = 0;
+	double duration = 0, start = 0;
 	struct rt_task param;
 	struct mc2_task mc2_param;
 	struct reservation_config config;
@@ -279,7 +278,6 @@ int main(int argc, char** argv)
 	size_t arena_sz;
 	int wss;
 	int uncacheable = 0;
-	int loop;
 	int read_access = 0, write;
 
 	/* default for reservation */
@@ -321,9 +319,6 @@ int main(int argc, char** argv)
 			break;
 		case 'i':
 			config.priority = atoi(optarg);
-			break;
-		case 'l':
-			loop = atoi(optarg);
 			break;
 		case 'u':
 			uncacheable = atoi(optarg);
@@ -443,7 +438,6 @@ int main(int argc, char** argv)
 		bail_out("could not become regular task (huh?)");
 
 	reservation_destroy(gettid(), config.cpu);
-	test_call(0);
 	dealloc_arena(arena, arena_sz*2);
 	printf("%s finished.\n", argv[0]);
 	return 0;

@@ -548,7 +548,7 @@ int set_page_color(int cpu);
  */
 int recolor_mem(void* vaddr, int n_pages, int cpu);
 
-int run_bench(int type, int size, cacheline_t *src, cacheline_t *dst, lt_t __user *ts);
+int run_bench(int type, int size, cacheline_t *src, cacheline_t *dst, lt_t *ts);
 
 int lock_buffer(void* vaddr, size_t size, unsigned int lock_way, unsigned int unlock_way);
 
