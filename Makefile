@@ -73,7 +73,7 @@ AR  := ${CROSS_COMPILE}${AR}
 
 all     = lib ${rt-apps}
 rt-apps = cycles base_task rt_launch rtspin release_ts measure_syscall \
-	  base_mt_task uncache runtests mc2measure rt_camera \
+	  base_mt_task uncache runtests mc2spin mc2measure rt_camera \
 	  rt_frame rt_udprecv rt_udpsend mc2ovhspin rt_matrix \
 	  rt_transitive rt_update rt_field rt_pointer msg_bench rt_msg \
 	  dio_raw dio_dma dio_dmaboth
@@ -237,6 +237,9 @@ obj-release_ts = release_ts.o
 
 obj-measure_syscall = null_call.o
 lib-measure_syscall = -lm
+
+obj-mc2spin = mc2spin.o common.o
+lib-mc2spin = -lrt -static
 
 obj-mc2ovhspin = mc2ovh.o common.o
 lib-mc2ovhspin = -lrt
