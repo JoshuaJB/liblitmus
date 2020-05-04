@@ -24,6 +24,25 @@ rtspin
 cycles
 measure_syscall
 
+# MC^2 executables
+mc2spin
+mc2measure
+rt_camera
+rt_frame
+rt_udprecv
+rt_udpsend
+mc2ovhspin
+rt_matrix
+rt_transitive
+rt_update
+rt_field
+rt_pointer
+msg_bench
+rt_msg
+dio_raw
+dio_dma
+dio_dmaboth
+
 # build system files
 .config
 inc/config.makefile

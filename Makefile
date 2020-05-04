@@ -73,7 +73,10 @@ AR  := ${CROSS_COMPILE}${AR}
 
 all     = lib ${rt-apps}
 rt-apps = cycles base_task rt_launch rtspin release_ts measure_syscall \
-	  base_mt_task uncache runtests
+	  base_mt_task uncache runtests mc2measure rt_camera \
+	  rt_frame rt_udprecv rt_udpsend mc2ovhspin rt_matrix \
+	  rt_transitive rt_update rt_field rt_pointer msg_bench rt_msg \
+	  dio_raw dio_dma dio_dmaboth
 
 .PHONY: all lib clean dump-config TAGS tags cscope help doc
 
@@ -234,6 +237,54 @@ obj-release_ts = release_ts.o
 
 obj-measure_syscall = null_call.o
 lib-measure_syscall = -lm
+
+obj-mc2ovhspin = mc2ovh.o common.o
+lib-mc2ovhspin = -lrt
+
+obj-mc2measure = mc2measure.o common.o
+lib-mc2measure = -lrt -static
+
+obj-rt_camera = rt_camera.o webcam_lib_old.o common.o
+lib-rt_camera = -lrt -lSDL2 $(shell sdl2-config --libs)
+
+obj-rt_frame = frame_poller.o webcam_lib.o common.o
+lib-rt_frame = -lrt -static
+
+obj-rt_udprecv = rt_udprecv.o common.o
+lib-rt_udprecv = -lrt -static
+
+obj-rt_udpsend = rt_udpsend.o common.o
+lib-rt_udpsend = -lrt -static
+
+obj-rt_matrix = rt_matrix.o common.o
+lib-rt_matrix = -lrt -static -lm
+
+obj-rt_update = rt_update.o common.o
+lib-rt_update = -lrt -static -lm
+
+obj-rt_transitive = rt_transitive.o common.o
+lib-rt_transitive = -lrt -static -lm
+
+obj-rt_field = rt_field.o common.o
+lib-rt_field = -lrt -static -lm
+
+obj-rt_pointer = rt_pointer.o common.o
+lib-rt_pointer = -lrt -static -lm
+
+obj-msg_bench = msg_bench.o common.o
+lib-msg_bench = -static
+
+obj-rt_msg = rt_msg.o common.o
+lib-rt_msg = -lrt -static -lm
+
+obj-dio_raw = dio_raw.o common.o
+lib-dio_raw = -lrt -static
+
+obj-dio_dma = dio_dmaonly.o common.o
+lib-dio_dma = -lrt -static
+
+obj-dio_dmaboth = dio_dmaboth.o common.o
+lib-dio_dmaboth = -lrt -static
 
 # ##############################################################################
 # Build everything that depends on liblitmus.
