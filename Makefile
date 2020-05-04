@@ -35,12 +35,6 @@ include-sparc64  = sparc
 # default: the arch name
 include-${ARCH} ?= ${ARCH}
 
-# name of the file(s) that holds the actual system call numbers
-unistd-i386      = uapi/asm/unistd.h generated/uapi/asm/unistd_32.h
-unistd-x86_64    = uapi/asm/unistd.h generated/uapi/asm/unistd_64.h
-# default: unistd.h
-unistd-${ARCH}  ?= uapi/asm/unistd.h
-
 # by default we use the local version
 LIBLITMUS ?= .
 
@@ -73,7 +67,7 @@ AR  := ${CROSS_COMPILE}${AR}
 
 all     = lib ${rt-apps}
 rt-apps = cycles base_task rt_launch rtspin release_ts measure_syscall \
-	  base_mt_task uncache runtests mc2spin mc2measure rt_camera \
+	  base_mt_task uncache runtests resctl mc2spin mc2measure rt_camera \
 	  rt_frame rt_udprecv rt_udpsend mc2ovhspin rt_matrix \
 	  rt_transitive rt_update rt_field rt_pointer msg_bench rt_msg \
 	  dio_raw dio_dma dio_dmaboth
@@ -169,16 +163,11 @@ arch/${include-${ARCH}}/include/generated/uapi/asm/%.h: \
 
 litmus-headers = \
 	include/litmus/rt_param.h \
+	include/litmus/ctrlpage.h \
 	include/litmus/fpmath.h \
-	include/litmus/unistd_32.h \
-	include/litmus/unistd_64.h \
 	include/litmus/mc2_common.h
 
-unistd-headers = \
-  $(foreach file,${unistd-${ARCH}},arch/${include-${ARCH}}/include/$(file))
-
-
-imported-headers = ${litmus-headers} ${unistd-headers}
+imported-headers = ${litmus-headers} 
 
 # Let's not copy these twice.
 .SECONDARY: ${imported-headers}
@@ -207,7 +196,10 @@ lib-runtests = -lrt
 
 # generate list of tests automatically
 test_catalog.inc: $(filter-out tests/runner.c,${src-runtests})
-	tests/make_catalog.py $+ > $@
+	@[ ! -z "$$(which python)" ] || \
+		(echo '  [!!!] Error: Need to have python installed in PATH.'; exit 1)
+	@tests/make_catalog.py $+ > $@ || \
+		(rm $@; echo "  [!!!] Error: Could not generate test catalogue."; exit 1)
 
 tests/runner.c: test_catalog.inc
 
@@ -233,10 +225,12 @@ lib-rtspin = -lrt
 obj-uncache = uncache.o
 lib-uncache = -lrt
 
-obj-release_ts = release_ts.o
+obj-release_ts = release_ts.o common.o
 
 obj-measure_syscall = null_call.o
 lib-measure_syscall = -lm
+
+obj-resctl = resctl.o
 
 obj-mc2spin = mc2spin.o common.o
 lib-mc2spin = -lrt -static
@@ -329,23 +323,6 @@ $(info (!!) Are you sure the path is correct?)
 $(info (!!) Run 'make dump-config' to see the build configuration.)
 $(info (!!) Edit the file .config to override the default configuration.)
 $(error Cannot build without access to the LITMUS^RT kernel source)
-endif
-
-kernel-unistd-hdrs := $(foreach file,${unistd-headers},${LITMUS_KERNEL}/$(file))
-hdr-ok     := $(shell egrep '\#include ["<]litmus/unistd|__NR_litmus_lock' ${kernel-unistd-hdrs} )
-ifeq ($(strip $(hdr-ok)),)
-$(info (!!) Could not find LITMUS^RT system calls in ${kernel-unistd-hdrs}.)
-$(error Your kernel headers do not seem to be LITMUS^RT headers)
-endif
-
-config-ok  := $(shell test -f "${LITMUS_KERNEL}/${word 1,${unistd-headers}}" \
-	|| echo fail )
-ifneq ($(config-ok),)
-$(info (!!) Could not find the architecture-specifc Linux headers.)
-$(info (!!) Are you sure ARCH=${ARCH} is correct?)
-$(info (!!) Run 'make dump-config' to see the build configuration.)
-$(info (!!) Edit the file '.config' to override the default configuration.)
-$(error Cannot build without access to the architecture-specific files)
 endif
 
 endif

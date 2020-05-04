@@ -1,11 +1,13 @@
 #include <sys/wait.h> /* for waitpid() */
 #include <unistd.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <sched.h>
 
 #include "tests.h"
 #include "litmus.h"
+#include "migration.h"
 
 
 TESTCASE(set_rt_task_param_invalid_pointer, ALL,
@@ -15,6 +17,33 @@ TESTCASE(set_rt_task_param_invalid_pointer, ALL,
 
 	SYSCALL_FAILS( EFAULT, set_rt_task_param(gettid(), (void*) 0x123 ));
 }
+
+TESTCASE(get_set_rt_task_param, ALL,
+	 "read back rt_task values")
+{
+	struct rt_task params;
+	int cpu = num_online_cpus() - 1;
+	init_rt_task_param(&params);
+	params.cpu        = cpu;
+	params.exec_cost  = 90;
+	params.period     = 321;
+	params.relative_deadline = 123;
+
+	/* set params */
+	SYSCALL( set_rt_task_param(gettid(), &params) );
+
+	/* now clear our copy */
+	memset(&params, 0, sizeof(params));
+
+	/* get params */
+	SYSCALL( get_rt_task_param(gettid(), &params) );
+
+	ASSERT(params.cpu == cpu);
+	ASSERT(params.exec_cost == 90);
+	ASSERT(params.period == 321);
+	ASSERT(params.relative_deadline == 123);
+}
+
 
 TESTCASE(set_rt_task_param_invalid_params, ALL,
 	 "reject invalid rt_task values")
@@ -105,13 +134,9 @@ TESTCASE(accept_valid_priorities, P_FP,
 TESTCASE(job_control_non_rt, ALL,
 	 "reject job control for non-rt tasks")
 {
-	unsigned int job_no;
-
 	SYSCALL_FAILS( EINVAL, sleep_next_period() );
 
 	SYSCALL_FAILS( EINVAL, wait_for_job_release(0) );
-
-	SYSCALL_FAILS( EPERM, get_job_no(&job_no) );
 }
 
 
@@ -167,6 +192,44 @@ TESTCASE(ctrl_page_writable, ALL,
 
 	ctrl_page[32] = 0x12345678;
 }
+
+TESTCASE(set_cpu_mapping, LITMUS,
+	 "task's CPU affinity is set to CPU set that is read from file")
+{
+	char buf[4096/4	/* enough chars for hex data (4 CPUs per char) */
+		+ 4096/(4*8) /* for commas (separate groups of 8 chars) */
+		+ 1] = {0}; /* for \0 */
+	int len;
+	cpu_set_t *set;
+	size_t sz;
+	
+	/*set affinity to CPU 0 */
+	strcpy(buf, "20");
+	len = strnlen(buf, sizeof(buf));
+	set_mapping(buf, len, &set, &sz);
+	ASSERT( CPU_ISSET_S(5, sz, set) );
+
+	/*set affinity to CPU 29 */
+	strcpy(buf, "20000000");
+	len = strnlen(buf, sizeof(buf));
+	set_mapping(buf, len, &set, &sz);
+	ASSERT( CPU_ISSET_S(29, sz, set) );
+
+	/*set affinity to CPUS 27 and 39 */
+	strcpy(buf, "80,08000000");
+	len = strnlen(buf, sizeof(buf));
+	set_mapping(buf, len, &set, &sz);
+	ASSERT( CPU_ISSET_S(27, sz, set) );
+	ASSERT( CPU_ISSET_S(39, sz, set) );
+
+	/*set affinity to CPUS 96 */
+	strcpy(buf, "1,00000000,00000000,00000000");
+	len = strnlen(buf, sizeof(buf));
+	set_mapping(buf, len, &set, &sz);
+	ASSERT( CPU_ISSET_S(96, sz, set) );
+
+}
+
 
 
 TESTCASE(suspended_admission, LITMUS,

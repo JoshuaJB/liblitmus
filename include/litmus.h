@@ -35,6 +35,9 @@ extern "C" {
  * and control_page structures.
  */
 #include "litmus/rt_param.h"
+#define __user
+#include "litmus/ctrlpage.h"
+#undef __user
 
 #include "asm/cycles.h" /* for null_call() */
 
@@ -77,6 +80,14 @@ int set_rt_task_param(pid_t pid, struct rt_task* param);
  * @return 0 on success
  */
 int get_rt_task_param(pid_t pid, struct rt_task* param);
+
+/**
+ * Create a new reservation/container (not supported by all plugins).
+ * @param rtype The type of reservation to create.
+ * @param config optional reservation-specific configuration (may be NULL)
+ * @return 0 on success
+ */
+int reservation_create(int rtype, void *config);
 
 /**
  * Convert a partition number to a CPU identifier
@@ -162,6 +173,14 @@ int sporadic_clustered(lt_t e_ns, lt_t p_ns, int cluster);
 #define us2ms(us) ((us)/1000LL)
 #define us2s(us)  ((us)/1000000LL)
 #define ms2s(ms)  ((ms)/1000LL)
+
+/** Convert nanoseconds to seconds (truncating)
+ * @param ns Time units in nanoseconds */
+#define ns2s(ns)   ((ns)/1000000000LL)
+
+/** Convert nanoseconds to milliseconds (truncating)
+ * @param ns Time units in nanoseconds */
+#define ns2ms(ns)   ((ns)/1000000LL)
 
 /**
  * Locking protocols for allocated shared objects
@@ -316,13 +335,13 @@ void exit_pgm_send(void);
 int wait_for_ts_release(void);
 /**
  * Release all tasks in the task system
- * @param delay Time to wait
+ * @param when Time of the synchronous release (w.r.t. CLOCK_MONOTONIC)
  * @return Number of tasks released
  *
  * Used by a task master to release all threads after each of them has been
  * set up.
  */
-int release_ts(lt_t *delay);
+int release_ts(lt_t *when);
 /**
  * Obtain the number of currently waiting tasks
  * @return The number of waiting tasks
@@ -341,6 +360,21 @@ int read_litmus_stats(int *ready, int *total);
 int lt_sleep(lt_t timeout);
 
 /**
+ * Sleep until the given point in time.
+ * @param wake_up_time Point in time when to wake up (w.r.t. CLOCK_MONOTONIC,
+ *                     in nanoseconds).
+ */
+void lt_sleep_until(lt_t wake_up_time);
+
+/** Get the current time used by the LITMUS^RT scheduler.
+ * This is just CLOCK_MONOTONIC and hence the same
+ * as monotime(), but the result is given in nanoseconds
+ * as a value of type lt_t.
+ * @return CLOCK_MONOTONIC time in nanoseconds
+ */
+lt_t litmus_clock(void);
+
+/**
  * Obtain CPU time consumed so far
  * @return CPU time in seconds
  */
@@ -351,6 +385,24 @@ double cputime(void);
  * @return Wall-clock time in seconds
  */
 double wctime(void);
+
+/**
+ * Obtain CLOCK_MONOTONIC time
+ * @return CLOCK_MONOTONIC time in seconds
+ */
+double monotime(void);
+
+/**
+ * Sleep until the given point in time.
+ * @param wake_up_time Point in time when to wake up (w.r.t. CLOCK_MONOTONIC)
+ */
+void sleep_until_mono(double wake_up_time);
+
+/**
+ * Sleep until the given point in time.
+ * @param wake_up_time Point in time when to wake up (w.r.t. CLOCK_REALTIME)
+ */
+void sleep_until_wc(double wake_up_time);
 
 /***** semaphore allocation ******/
 /**
@@ -422,6 +474,16 @@ static inline int open_dflp_sem(int fd, int name, int cpu)
 {
 	return od_openx(fd, DFLP_SEM, name, &cpu);
 }
+
+/**
+ * Get budget information from the scheduler (in nanoseconds).
+ * @param expended pointer to time value in wich the total
+ *        amount of already used-up budget will be stored.
+ * @param remaining pointer to time value in wich the total
+ *        amount of remaining budget will be stored.
+ */
+
+int get_current_budget(lt_t *expended, lt_t *remaining);
 
 /**
  * Do nothing as a syscall
