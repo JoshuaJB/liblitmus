@@ -438,8 +438,18 @@ int null_call(cycles_t *timestamp);
  */
 struct control_page* get_ctrl_page(void);
 
+/*
+ * Create a reservation for "reservation-based" scheduling (eg. table-based)
+ *
+ * Backported from more recent versions of LITMUS^RT
+ */
 int reservation_create(int rtype, void *config);
 
+/*
+ * Delete a reservation for "reservation-based" scheduling (eg. table-based)
+ *
+ * Backported from more recent versions of LITMUS^RT
+ */
 int reservation_destroy(unsigned int reservation_id, int cpu);
 
 /**
@@ -472,7 +482,7 @@ int set_page_color(int cpu);
  * @param cpu The current CPU on which the caller is running
  * @return Total number of pages that could not be moved
  *
- * This is a more refined version of set_page_color().
+ * This is a more refined version of set_page_color(). ***DEPRECATED***
  */
 int recolor_mem(void* vaddr, int n_pages, int cpu);
 

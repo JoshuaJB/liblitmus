@@ -59,7 +59,7 @@ inline int linear_read(pbuf_t addr, int size, char val)
 }
 
 /* write to *data nr times. */
-inline int hammer_write(pbuf_t data, char val, int nr)
+static inline int hammer_write(pbuf_t data, char val, int nr)
 {
 	int i;
 	for (i = 0; i < nr; ++i)
@@ -68,7 +68,7 @@ inline int hammer_write(pbuf_t data, char val, int nr)
 }
 
 /* read from *data nr times. */
-inline int hammer_read(pbuf_t data, char val, int nr)
+static inline int hammer_read(pbuf_t data, char val, int nr)
 {
 	int i;
 	for (i = 0; i < nr; ++i) {
@@ -78,7 +78,7 @@ inline int hammer_read(pbuf_t data, char val, int nr)
 	return 0;
 }
 
-inline int test(pbuf_t data, int size, int trials)
+static inline int test(pbuf_t data, int size, int trials)
 {
 	int HAMMER_TIME = 10000;  /* can't cache this! */
 	char VAL = 0x55;
@@ -109,7 +109,7 @@ inline int test(pbuf_t data, int size, int trials)
 	return 0;
 }
 
-inline void timespec_normalize(struct timespec* ts, time_t sec, int64_t nsec)
+static inline void timespec_normalize(struct timespec* ts, time_t sec, int64_t nsec)
 {
 	while(nsec > 1000000000LL) {
 		asm("" : "+rm"(nsec));
@@ -126,21 +126,21 @@ inline void timespec_normalize(struct timespec* ts, time_t sec, int64_t nsec)
 	ts->tv_nsec = nsec;
 }
 
-inline struct timespec timespec_sub(struct timespec lhs, struct timespec rhs)
+static inline struct timespec timespec_sub(struct timespec lhs, struct timespec rhs)
 {
 	struct timespec delta;
 	timespec_normalize(&delta, lhs.tv_sec - rhs.tv_sec, lhs.tv_nsec - rhs.tv_nsec);
 	return delta;
 }
 
-inline struct timespec timespec_add(struct timespec lhs, struct timespec rhs)
+static inline struct timespec timespec_add(struct timespec lhs, struct timespec rhs)
 {
 	struct timespec delta;
 	timespec_normalize(&delta, lhs.tv_sec + rhs.tv_sec, lhs.tv_nsec + rhs.tv_nsec);
 	return delta;
 }
 
-inline int64_t timespec_to_us(struct timespec ts)
+static inline int64_t timespec_to_us(struct timespec ts)
 {
 	int64_t t;
 	t = ts.tv_sec * 1000000LL;
