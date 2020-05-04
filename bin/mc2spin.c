@@ -47,7 +47,7 @@ static cacheline_t* alloc_arena(size_t size, int use_huge_pages, int use_uncache
 		flags |= MAP_ANONYMOUS;
 	}
 
-	arena = mmap(0, size, PROT_READ | PROT_WRITE, flags, fd, 0);
+	arena = (cacheline_t*)mmap(0, size, PROT_READ | PROT_WRITE, flags, fd, 0);
 	
 	if(use_uncache_pages)
 		close(fd);
@@ -199,14 +199,14 @@ static void usage(char *error) {
 	fprintf(stderr,
 		"Usage:\n"
 		"	rt_spin [COMMON-OPTS] WCET PERIOD DURATION\n"
-		"	rt_spin [COMMON-OPTS] -f FILE [-o COLUMN] WCET PERIOD\n"
 		"	rt_spin -l\n"
 		"\n"
-		"COMMON-OPTS = [-w] [-s SCALE]\n"
-		"              [-p PARTITION/CLUSTER [-z CLUSTER SIZE]] [-m CRITICALITY LEVEL]\n"
+		"COMMON-OPTS = [-w] [-r] [-i] [-u]\n"
+		"              [-p PARTITION/CLUSTER] [-m CRITICALITY LEVEL]\n"
 		"              [-k WSS] [-l LOOPS] [-b BUDGET]\n"
 		"\n"
-		"WCET and PERIOD are milliseconds, DURATION is seconds.\n");
+		"WCET and PERIOD are milliseconds, DURATION is seconds.\n"
+		"WSS is in kB.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -224,7 +224,7 @@ static int loop_once(int wss, int write)
 	temp = sequential_walk(mem, wss, write);
 #endif
 	dont_optimize_me = temp;
-	
+
 	return dont_optimize_me;
 }
 
@@ -271,7 +271,7 @@ int main(int argc, char** argv)
 	int cluster = 0;
 	int opt;
 	int wait = 0;
-	double duration = 0, start = 0;
+	double duration = 0, start = 0, stop = 0;
 	struct rt_task param;
 	struct mc2_task mc2_param;
 	struct reservation_config config;
