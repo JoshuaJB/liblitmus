@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 	}
 	r_avg = r_avg / (r_index-1);
 	
-	printf("Send max: %ld, avg %f\n", s_max, s_avg);
-	printf("Recv max: %ld, avg %f\n", r_max, r_avg);
+	printf("Send max: %lld, avg %f\n", s_max, s_avg);
+	printf("Recv max: %lld, avg %f\n", r_max, r_avg);
     return 0;
 }

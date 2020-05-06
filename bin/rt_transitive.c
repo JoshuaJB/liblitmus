@@ -316,6 +316,6 @@ int main(int argc, char** argv)
 	post_job();
 	//printf("%s/%d finished.\n",progname, gettid());
 	for (i = 0; i < result_index; i++)
-		printf("%ld\n", result[i]);
+		printf("%lld\n", result[i]);
 	return 0;
 }

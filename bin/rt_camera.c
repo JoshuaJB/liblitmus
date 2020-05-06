@@ -225,7 +225,7 @@ static int job(double exec_time, double program_end)
 		t = get_cycles();
 		loop_once();
 		t = get_cycles() - t;
-		printf("%ld cycles\n", t);
+		printf("%llu cycles\n", t);
    		sleep_next_period(); 
     	return 1;
 	}

@@ -249,7 +249,7 @@ int main(int argc, char** argv)
 	struct mc2_task mc2_param;
 	struct reservation_config config;
 	int res_type = PERIODIC_POLLING;
-	int res_index; 
+	int res_index = 0;
 	char dev_name[255];
 	
 	WebcamInfo webcam;

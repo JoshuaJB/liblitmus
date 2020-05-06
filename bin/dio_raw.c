@@ -440,5 +440,6 @@ int main(int argc, char** argv)
 	printf("%s/%d finished.\n",progname, gettid());	
 	close(fd);
 	munmap(buff, buffsize);
+	dealloc_arena(arena, arena_sz);
 	return 0;
 }
