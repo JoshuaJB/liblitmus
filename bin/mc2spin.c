@@ -198,14 +198,14 @@ static void usage(char *error) {
 	fprintf(stderr, "Error: %s\n", error);
 	fprintf(stderr,
 		"Usage:\n"
-		"	rt_spin [COMMON-OPTS] WCET PERIOD DURATION\n"
+		"	mc2spin [COMMON-OPTS] [-p PARTITON/CLUSTER] [-m CRITICALITY LEVEL] WCET PERIOD DURATION\n"
 		"\n"
 		"COMMON-OPTS = [-w] [-r] [-i] [-u]\n"
-		"              [-p PARTITION/CLUSTER] [-m CRITICALITY LEVEL]\n"
 		"              [-k WSS] [-l LOOPS] [-b BUDGET]\n"
 		"\n"
 		"WCET and PERIOD are milliseconds, DURATION is seconds.\n"
-		"WSS is in kB.\n");
+		"WSS is in kB.\n"
+		"CRITICALITY LEVEL is 0 for Level-A, 1 for Level-B, and 2 for Level-C.\n");
 	exit(EXIT_FAILURE);
 }
 
