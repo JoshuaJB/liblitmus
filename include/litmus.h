@@ -501,13 +501,6 @@ int null_call(cycles_t *timestamp);
 struct control_page* get_ctrl_page(void);
 
 /*
- * Create a reservation for "reservation-based" scheduling (eg. table-based)
- *
- * Backported from more recent versions of LITMUS^RT
- */
-int reservation_create(int rtype, void *config);
-
-/*
  * Delete a reservation for "reservation-based" scheduling (eg. table-based)
  *
  * Backported from more recent versions of LITMUS^RT

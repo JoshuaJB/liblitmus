@@ -8,6 +8,12 @@
 /* for syscall() */
 #include <unistd.h>
 
+/* for ENOSYS */
+#include <errno.h>
+
+/* for printf */
+#include <stdio.h>
+
 #include "litmus.h"
 #include "internal.h"
 
@@ -113,37 +119,42 @@ int get_current_budget(
 	return litmus_syscall(LRT_get_current_budget, (unsigned long) &args);
 }
 
-int reservation_create(int rtype, void *config)
-{
-	return syscall(__NR_reservation_create, rtype, config);
-}
-
 int reservation_destroy(unsigned int reservation_id, int cpu)
 {
-	return syscall(__NR_reservation_destroy, reservation_id, cpu);
+	union litmus_syscall_args args;
+	args.reservation_destroy.reservation_id = reservation_id;
+	args.reservation_destroy.cpu = cpu;
+	return litmus_syscall(LRT_reservation_destroy, (unsigned long) &args);
 }
 
 int set_mc2_task_param(pid_t pid, struct mc2_task *param)
 {
-	return syscall(__NR_set_mc2_task_param, pid, param);
+	union litmus_syscall_args args;
+	args.set_mc2_task_param.pid = pid;
+	args.set_mc2_task_param.param = param;
+	return litmus_syscall(LRT_set_mc2_task_param, (unsigned long) &args);
 }
 
 int set_page_color(int cpu)
 {
-	return syscall(__NR_set_page_color, cpu);
+	printf("ERROR: Unsupported syscall `set_page_color` called.\n");
+	return -ENOSYS;
 }
 
 int recolor_mem(void* vaddr, int num_pages, int cpu)
 {
-	return syscall(__NR_recolor_mem, vaddr, num_pages, cpu);
+	printf("ERROR: Unsupported syscall `recolor_mem` called.\n");
+	return -ENOSYS;
 }
 
 int run_bench(int type, int wss, cacheline_t *src, cacheline_t *dst, lt_t *ts)
 {
-	return syscall(__NR_run_test, type, wss, src, dst, ts);
+	printf("ERROR: Unsupported syscall `run_bench` called.\n");
+	return -ENOSYS;
 }
 
 int lock_buffer(void* vaddr, size_t size, unsigned int lock_way, unsigned int unlock_way)
 {
-	return syscall(__NR_lock_buffer, vaddr, size, lock_way, unlock_way);
+	printf("ERROR: Unsupported syscall `lock_buffer` called.\n");
+	return -ENOSYS;
 }
