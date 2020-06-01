@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <inttypes.h>
 #include <assert.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -200,8 +201,9 @@ static void usage(char *error) {
 		"Usage:\n"
 		"	mc2spin [COMMON-OPTS] [-p PARTITON/CLUSTER] [-m CRITICALITY LEVEL] WCET PERIOD DURATION\n"
 		"\n"
-		"COMMON-OPTS = [-w] [-r] [-i] [-u]\n"
+		"COMMON-OPTS = [-w] [-r] [-i] [-u] [-v]\n"
 		"              [-k WSS] [-l LOOPS] [-b BUDGET]\n"
+		"    -v                verbose (print per-job statistics)\n"
 		"\n"
 		"WCET and PERIOD are milliseconds, DURATION is seconds.\n"
 		"WSS is in kB.\n"
@@ -259,13 +261,13 @@ static int job(int wss, int write, double exec_time, double program_end)
 	}
 }
 
-#define OPTSTR "p:wl:m:i:b:k:u:r:"
+#define OPTSTR "p:wl:m:i:b:k:u:r:v"
 int main(int argc, char** argv)
 {
 	int ret;
 	lt_t wcet, period, budget;
 	double wcet_ms, period_ms, budget_ms;
-	unsigned int priority = LITMUS_NO_PRIORITY;
+	unsigned int priority = LITMUS_NO_PRIORITY; /* use EDF by default */
 	int migrate = 0;
 	int cluster = 0;
 	int opt;
@@ -279,10 +281,12 @@ int main(int argc, char** argv)
 	int wss;
 	int uncacheable = 0;
 	int read_access = 0, write;
+	int verbose = 0;
+	unsigned int job_no;
+	struct control_page* cp;
 
 	/* default for reservation */
 	config.id = 0;
-	config.priority = LITMUS_NO_PRIORITY; /* use EDF by default */
 	config.cpu = -1;
 	
 	mc2_param.crit = CRIT_LEVEL_C;
@@ -317,11 +321,17 @@ int main(int argc, char** argv)
 		case 'r':
 			read_access = atoi(optarg);
 			break;
-		case 'i':
+		case 'q':
+			priority = want_non_negative_int(optarg, "-q");
+			if (!litmus_is_valid_fixed_prio(priority))
+				usage("Invalid priority");
 			config.priority = atoi(optarg);
 			break;
 		case 'u':
 			uncacheable = atoi(optarg);
+			break;
+		case 'v':
+			verbose = 1;
 			break;
 		case ':':
 			usage("Argument missing.");
@@ -369,6 +379,7 @@ int main(int argc, char** argv)
 
 	/* reservation config */
 	config.id = gettid();
+	config.priority = priority;
 	config.polling_params.budget = budget;
 	config.polling_params.period = period;
 	config.polling_params.offset = 0;
@@ -387,10 +398,12 @@ int main(int argc, char** argv)
 	init_rt_task_param(&param);
 	param.exec_cost = wcet;
 	param.period = period;
-	param.priority = priority;
+	param.phase = 0;
+	param.relative_deadline = 0;
+	param.priority = priority == LITMUS_NO_PRIORITY ? LITMUS_LOWEST_PRIORITY : priority;
 	param.cls = RT_CLASS_HARD;
-	param.release_policy = TASK_PERIODIC;
 	param.budget_policy = NO_ENFORCEMENT;
+	param.release_policy = TASK_PERIODIC;
 	if (migrate) {
 		param.cpu = gettid();
 	}
@@ -430,8 +443,34 @@ int main(int argc, char** argv)
 			bail_out("wait_for_ts_release()");
 		start = wctime();
 	}
+	cp = get_ctrl_page();
 
-	while (job(wss, write, wcet_ms * 0.001, start + duration)) {};
+	while (job(wss, write, wcet_ms * 0.001, start + duration)) {
+		if (verbose) {
+			get_job_no(&job_no);
+			fprintf(stderr, "rtspin/%d:%u @ %.4fms\n", gettid(),
+				job_no, (wctime() - start) * 1000);
+			if (cp) {
+				double deadline, current, release;
+				lt_t now = litmus_clock();
+				deadline = ns2s((double) cp->deadline);
+				current  = ns2s((double) now);
+				release  = ns2s((double) cp->release);
+				fprintf(stderr,
+					"\trelease:  %" PRIu64 "ns (=%.2fs)\n",
+					(uint64_t) cp->release, release);
+				fprintf(stderr,
+					"\tdeadline: %" PRIu64 "ns (=%.2fs)\n",
+					(uint64_t) cp->deadline, deadline);
+				fprintf(stderr,
+					"\tcur time: %" PRIu64 "ns (=%.2fs)\n",
+					(uint64_t) now, current);
+				fprintf(stderr,
+					"\ttime until deadline: %.2fms\n",
+					(deadline - current) * 1000);
+			}
+		}
+	};
 
 	ret = task_mode(BACKGROUND_TASK);
 	if (ret != 0)
