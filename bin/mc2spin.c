@@ -255,9 +255,7 @@ static int job(int wss, int write, double exec_time, double program_end)
 				break;
 			}
 		}
-		
-   		sleep_next_period(); 
-    	return 1;
+		return 1;
 	}
 }
 
@@ -445,7 +443,7 @@ int main(int argc, char** argv)
 	}
 	cp = get_ctrl_page();
 
-	while (job(wss, write, wcet_ms * 0.001, start + duration)) {
+	while (1) {
 		if (verbose) {
 			get_job_no(&job_no);
 			fprintf(stderr, "rtspin/%d:%u @ %.4fms\n", gettid(),
@@ -470,6 +468,15 @@ int main(int argc, char** argv)
 					(deadline - current) * 1000);
 			}
 		}
+		if (!job(wss, write, wcet_ms * 0.001, start + duration))
+			break;
+		if (verbose && cp)
+			fprintf(stderr,
+				"\tsleep_next_period() until %"
+				PRIu64 "ns (=%.2fs)\n",
+				(uint64_t) (cp->release + period),
+				ns2s((double) (cp->release + period)));
+		sleep_next_period();
 	};
 
 	ret = task_mode(BACKGROUND_TASK);
